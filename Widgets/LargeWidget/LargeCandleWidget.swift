@@ -8,59 +8,7 @@
 import WidgetKit
 import SwiftUI
 
-struct OHLCDataPoint: Identifiable {
-    let id = UUID()
-    let date: Date
-    let open: Double
-    let high: Double
-    let low: Double
-    let close: Double
-}
 
-// Dummy data for the chart
-func getDummyData(for timeframe: Timeframe) -> [OHLCDataPoint] {
-    var dataPoints: [OHLCDataPoint] = []
-    let calendar = Calendar.current
-    let now = Date()
-    let numberOfCandles: Int
-    switch timeframe {
-    case .fiveMin: numberOfCandles = 24 // 2 hours of 5 min candles
-    case .fifteenMin: numberOfCandles = 16 // 4 hours of 15 min candles
-    case .oneHour: numberOfCandles = 12 // 12 hours of 1 hour candles
-    }
-
-    var lastClose = Double.random(in: 100...200) // Start with a random base price
-
-    for i in 0..<numberOfCandles {
-        let date = calendar.date(byAdding: .minute, value: -i * timeframeValue(timeframe), to: now)!
-        
-        let open: Double
-        if i == 0 { // For the most recent candle, open can be different from previous close
-            open = lastClose + Double.random(in: -1...1) // Slight variation for the first open
-        } else {
-            open = lastClose // Subsequent candles open at the previous close
-        }
-        
-        let priceMovement = Double.random(in: -5...5) // Max movement for this candle
-        let close = open + priceMovement
-        
-        // Ensure high is above open/close and low is below open/close
-        let high = max(open, close) + Double.random(in: 0.1...3) // Add some wick, ensure high > open/close
-        let low = min(open, close) - Double.random(in: 0.1...3)  // Add some wick, ensure low < open/close
-
-        dataPoints.append(OHLCDataPoint(date: date, open: open, high: high, low: low, close: close))
-        lastClose = close // Update lastClose for the next iteration
-    }
-    return dataPoints.reversed() // Reverse to have oldest data first, newest last
-}
-
-func timeframeValue(_ timeframe: Timeframe) -> Int {
-    switch timeframe {
-    case .fiveMin: return 5
-    case .fifteenMin: return 15
-    case .oneHour: return 60
-    }
-}
 
 struct Provider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
@@ -140,7 +88,7 @@ struct TimeframeButton: View {
             let intent = ConfigurationAppIntent()
             intent.selectedSymbol = symbol // Use the passed symbol
             intent.selectedTimeframe = timeframe
-            WidgetCenter.shared.reloadTimelines(ofKind: "CandleStickWidget")
+            WidgetCenter.shared.reloadTimelines(ofKind: "LargeCandleWidget")
         }) {
             Text(label)
                 .font(.caption)
@@ -156,36 +104,77 @@ struct TimeframeButton: View {
 struct PriceScaleView: View {
     let minPrice: Double
     let maxPrice: Double
+    let lastClosePrice: Double?
+    let lastUpdateTime: Date?
     let height: CGFloat
+    let chartWidth: CGFloat // Width of the main chart area, needed for line
     let numberOfTicks = 5 // Number of labels on the price scale
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if maxPrice > minPrice && numberOfTicks > 1 {
-                ForEach(0..<numberOfTicks, id: \.self) { i in
-                    // Calculate price for each tick, ensuring the last tick is maxPrice
-                    let price = minPrice + (maxPrice - minPrice) * (Double(i) / Double(numberOfTicks - 1))
-                    Text(String(format: "%.2f", price))
-                        .font(.caption2)
-                        .foregroundColor(.gray)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    if i < numberOfTicks - 1 {
-                        Spacer() // Distribute ticks evenly
+        GeometryReader { priceScaleGeometry in
+            ZStack(alignment: .topLeading) {
+                // Axis lines removed as per request
+
+                VStack(alignment: .leading, spacing: 0) {
+                    // Price Ticks
+                    if maxPrice > minPrice && numberOfTicks > 1 {
+                        ForEach(0..<numberOfTicks, id: \.self) { i in
+                            let price = maxPrice - (maxPrice - minPrice) * (Double(i) / Double(numberOfTicks - 1))
+                            Text(String(format: "%.2f", price))
+                                .font(.caption2)
+                                .foregroundColor(.gray)
+                                .padding(.leading, 5)
+                            if i < numberOfTicks - 1 {
+                                Spacer()
+                            }
+                        }
+                    } else if maxPrice == minPrice && maxPrice != 0 {
+                         Text(String(format: "%.2f", maxPrice))
+                            .font(.caption2)
+                            .foregroundColor(.gray)
+                            .padding(.leading, 5)
+                    } else {
+                        Text("--.--")
+                            .font(.caption2)
+                            .foregroundColor(.gray)
+                            .padding(.leading, 5)
                     }
                 }
-            } else if maxPrice == minPrice { // Handle case where all prices are the same
-                 Text(String(format: "%.2f", maxPrice))
-                    .font(.caption2)
-                    .foregroundColor(.gray)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            } else {
-                Text("--.--") // Placeholder if data is invalid
-                    .font(.caption2)
-                    .foregroundColor(.gray)
+                .frame(height: height) // Height for the price ticks area (main chart height)
+
+                // Last Price Box
+                if let lastClose = lastClosePrice, let lastUpdate = lastUpdateTime {
+                    let priceRange = maxPrice - minPrice
+                    let yPositionRatio = priceRange > 0 ? (maxPrice - lastClose) / priceRange : 0.5
+                    let yOffset = CGFloat(yPositionRatio) * height // Position relative to main chart height
+
+                    // Line from chart edge to box (simplified)
+                    Path { path in
+                        path.move(to: CGPoint(x: -chartWidth, y: yOffset)) // Start from left edge of chart
+                        path.addLine(to: CGPoint(x: 0, y: yOffset)) // End at the start of price scale view
+                    }
+                    .stroke(Color.gray.opacity(0.7), style: StrokeStyle(lineWidth: 1, dash: [2, 2]))
+
+                    VStack(spacing: 4) { // Changed to HStack for inline display
+                        Text(String(format: "%.2f", lastClose))
+                            .font(.system(size: 12))
+                            .minimumScaleFactor(0.01)
+                            .lineLimit(1)
+                            .foregroundColor(.black)
+                        Text(lastUpdate, style: .time)
+                            .font(.system(size: 12))
+                            .minimumScaleFactor(0.01)
+                            .lineLimit(1)
+                            .foregroundColor(.black) // Removed opacity from text
+                    }
+                    .padding(EdgeInsets(top: 2, leading: 4, bottom: 2, trailing: 4))
+                    .background(Color.green) // No background opacity
+                    .cornerRadius(3)
+                    .offset(x: 5, y: yOffset - 10) // Adjust -10 to center box on line
+                }
             }
         }
-        .frame(height: height) // Ensure this VStack takes the allocated height
-        .padding(.leading, 4) // Padding from the chart candles
+        .padding(.trailing, 4)
     }
 }
 
@@ -228,74 +217,54 @@ struct WidgetsEntryView : View {
                     let maxPrice = allPrices.max() ?? 1
                     
                     HStack(spacing: 0) {
-                        // Candles Area
-                        VStack(spacing: 0) {
-                            HStack(alignment: .bottom, spacing: 1) {
+                    // Main Chart Area
+                    ZStack(alignment: .bottomLeading) {
+                        // Axis lines removed
+
+                        VStack(spacing: 0) { // Use VStack to manage chart and time axis separately
+                            HStack(spacing: 2) {
                                 ForEach(entry.ohlcData) { dataPoint in
                                     CandleStickView(dataPoint: dataPoint, minPrice: minPrice, maxPrice: maxPrice)
                                 }
                             }
-                            .frame(height: geometry.size.height * 0.85) // Main chart area
+                            .frame(height: geometry.size.height * 0.9) // Candles take 90% of height
 
-                            // Time Axis Labels
+                            // Time Axis Labels (Bottom)
                             HStack {
-                                Text(timeAxisLabel(for: entry.configuration.selectedTimeframe, at: .start, data: entry.ohlcData))
-                                    .font(.caption2).foregroundColor(.gray)
-                                Spacer()
-                                Text(timeAxisLabel(for: entry.configuration.selectedTimeframe, at: .middle, data: entry.ohlcData))
-                                    .font(.caption2).foregroundColor(.gray)
-                                Spacer()
-                                Text(timeAxisLabel(for: entry.configuration.selectedTimeframe, at: .end, data: entry.ohlcData))
-                                    .font(.caption2).foregroundColor(.gray)
+                                if !entry.ohlcData.isEmpty {
+                                    Text(entry.ohlcData.first!.date, style: .time)
+                                        .font(.caption2)
+                                        .foregroundColor(.gray)
+                                    Spacer()
+                                    Text(entry.ohlcData.last!.date, style: .time)
+                                        .font(.caption2)
+                                        .foregroundColor(.gray)
+                                }
                             }
-                            .frame(height: geometry.size.height * 0.10) // Time axis area
-                            .padding(.horizontal, 2)
+                            .padding(.horizontal, 5)
+                            .frame(height: geometry.size.height * 0.1) // Time axis takes 10% of height
                         }
-                        .frame(width: geometry.size.width * 0.85) // Allocate space for candles and time axis
+                        .frame(height: geometry.size.height) // Ensure VStack takes full ZStack height
+                    }
+                    .frame(width: geometry.size.width * 0.85) // Chart area takes 85% of width
 
                         // Price Scale (Right Axis)
-                        PriceScaleView(minPrice: minPrice, maxPrice: maxPrice, height: geometry.size.height * 0.85) // Align height with candles
-                            .frame(width: geometry.size.width * 0.15) // Allocate space for price scale
+                        PriceScaleView(minPrice: minPrice, maxPrice: maxPrice, lastClosePrice: entry.ohlcData.last?.close, lastUpdateTime: entry.date, height: geometry.size.height * 0.9, chartWidth: geometry.size.width * 0.85) // Use 90% of height to align with chart
+                            .frame(width: geometry.size.width * 0.15, height: geometry.size.height * 0.9) // Explicitly set frame height for PriceScaleView
+                            .offset(y: -geometry.size.height * 0.05) // Offset to align with the chart's new bottom (since chart is 90% and time axis is 10%)
                     }
                 }
             }
             .frame(maxHeight: .infinity)
             
-            // Bottom Bar: Last Price and Update Time
-            if let lastDataPoint = entry.ohlcData.last {
-                HStack {
-                    Text("Last: \(String(format: "%.2f", lastDataPoint.close))")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                    Spacer()
-                    Text("Updated: \(entry.date, style: .time)")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                }
-                .padding(.horizontal)
-                .padding(.bottom, 10)
-                .padding(.top, 5)
-            } else {
-                 HStack {
-                    Text("Last: --")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                    Spacer()
-                    Text("Updated: --:--")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                }
-                .padding(.horizontal)
-                .padding(.bottom, 10)
-                .padding(.top, 5)
-            }
+
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity) // Ensure VStack takes full space
     }
 }
 
-struct Widgets: Widget {
-    let kind: String = "CandleStickWidget"
+struct LargeCandleWidget: Widget {
+    let kind: String = "LargeCandleWidget"
 
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
@@ -304,6 +273,7 @@ struct Widgets: Widget {
         }
         .configurationDisplayName("Candle Chart")
         .description("Displays a candlestick chart for a selected symbol and timeframe.")
+        .supportedFamilies([.systemLarge])
     }
 }
 
@@ -332,7 +302,7 @@ enum TimeAxisPosition {
 }
 
 #Preview(as: .systemExtraLarge) { // Changed preview size for better chart visibility
-    Widgets()
+    LargeCandleWidget()
 } timeline: {
     SimpleEntry(date: .now, configuration: { let intent = ConfigurationAppIntent(); intent.selectedSymbol = "AAPL"; intent.selectedTimeframe = .fifteenMin; return intent }(), ohlcData: getDummyData(for: .fifteenMin))
     SimpleEntry(date: .now, configuration: { let intent = ConfigurationAppIntent(); intent.selectedSymbol = "TSLA"; intent.selectedTimeframe = .oneHour; return intent }(), ohlcData: getDummyData(for: .oneHour))
