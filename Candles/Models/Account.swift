@@ -1,6 +1,7 @@
 import Foundation
+import GRDB
 
-struct Account: Identifiable, Codable {
+struct Account: Identifiable, Codable, FetchableRecord, PersistableRecord {
     let id: UUID
     let broker: Broker
     let userName: String
@@ -13,6 +14,11 @@ struct Account: Identifiable, Codable {
         self.userName = userName
         self.token = token
         self.displayName = displayName ?? "\(broker.rawValue.capitalized) - \(userName)"
+    }
+
+    // GRDB Column mapping
+    enum Columns: String, ColumnExpression {
+        case id, broker, userName, token, displayName
     }
 }
 

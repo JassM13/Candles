@@ -10,6 +10,7 @@
 		C65A70FC2DF905F1004A3191 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C65A70FB2DF905F1004A3191 /* WidgetKit.framework */; };
 		C65A70FE2DF905F1004A3191 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C65A70FD2DF905F1004A3191 /* SwiftUI.framework */; };
 		C65A710C2DF905F5004A3191 /* WidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C65A70F92DF905F1004A3191 /* WidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C66B6E1E2DFC67A3007602E9 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = C66B6E1D2DFC67A3007602E9 /* GRDB */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -74,6 +75,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C66B6E1E2DFC67A3007602E9 /* GRDB in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -139,6 +141,7 @@
 			);
 			name = Candles;
 			packageProductDependencies = (
+				C66B6E1D2DFC67A3007602E9 /* GRDB */,
 			);
 			productName = Candles;
 			productReference = C65A70E62DF905D5004A3191 /* Candles.app */;
@@ -193,6 +196,9 @@
 			);
 			mainGroup = C65A70DD2DF905D4004A3191;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C66B6E1C2DFC67A3007602E9 /* XCRemoteSwiftPackageReference "GRDB.swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C65A70E72DF905D5004A3191 /* Products */;
 			projectDirPath = "";
@@ -550,6 +556,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C66B6E1C2DFC67A3007602E9 /* XCRemoteSwiftPackageReference "GRDB.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/groue/GRDB.swift.git";
+			requirement = {
+				branch = GRDB7;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C66B6E1D2DFC67A3007602E9 /* GRDB */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C66B6E1C2DFC67A3007602E9 /* XCRemoteSwiftPackageReference "GRDB.swift" */;
+			productName = GRDB;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C65A70DE2DF905D4004A3191 /* Project object */;
 }
