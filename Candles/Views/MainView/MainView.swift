@@ -1,5 +1,5 @@
 //
-//  CustomTabBar.swift
+//  MainView.swift
 //  Candles
 //
 //  Created by Jaspreet Malak on 6/10/25.
@@ -7,8 +7,7 @@
 
 import SwiftUI
 
-// Enum to represent the different tabs, mirroring ContentView's Tab enum
-// This could be refactored to a shared location if used in more places.
+// Enum to represent the different tabs
 enum TabItem: String, CaseIterable, Identifiable {
     case watchlist = "Watchlist"
     case chart = "Chart"
@@ -24,6 +23,37 @@ enum TabItem: String, CaseIterable, Identifiable {
         case .dom: return "tablecells"
         case .account: return "person.crop.circle"
         }
+    }
+}
+
+struct MainView: View {
+    @Environment(\.colorScheme) private var colorScheme
+    
+    @State private var selectedTab: TabItem = .watchlist
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            // Content area
+            Group {
+                switch selectedTab {
+                case .watchlist:
+                    WatchlistView()
+                case .chart:
+                    ChartView()
+                case .dom:
+                    DOMView()
+                case .account:
+                    AccountView()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .animation(.easeInOut, value: selectedTab) // Animate content switching
+
+            // Custom Tab Bar
+            CustomTabBar(selectedTab: $selectedTab)
+                .padding(.horizontal)
+        }
+        .ignoresSafeArea(.keyboard, edges: .bottom) // Ensure tab bar is not pushed by keyboard
     }
 }
 
@@ -55,40 +85,19 @@ struct CustomTabBar: View {
                         }
                     }
                     .padding(.vertical, 8)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 16)
                     .background(selectedTab == tab ? Color.blue.opacity(0.2) : Color.clear)
                     .cornerRadius(10)
                     .foregroundColor(selectedTab == tab ? .blue : .gray)
                 }
                 .buttonStyle(PlainButtonStyle())  // To remove default button styling
-                if tab != tabs.last {
-                    Spacer()
-                }
+                .contentShape(Rectangle()) // Ensure the entire frame is tappable
             }
         }
-        .padding()
-        .padding(.horizontal)
     }
 }
 
-// Moved PreviewWrapper outside of the previews computed property
-struct PreviewWrapper: View {
-    @State private var currentTab: TabItem = .watchlist
-    var body: some View {
-        VStack {
-            Spacer()
-            // Placeholder for content based on currentTab
-            Text("Selected View: \(currentTab.rawValue)")
-            Spacer()
-            CustomTabBar(selectedTab: $currentTab)
-        }
-    }
-}
 
-struct CustomTabBar_Previews: PreviewProvider {
-    static var previews: some View {
-        // Example of how to use CustomTabBar in a preview
-        // You'll need a @State variable in a parent view to hold the selectedTab
-        PreviewWrapper()
-    }
+#Preview {
+    MainView()
 }

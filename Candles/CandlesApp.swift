@@ -2,7 +2,7 @@
 //  CandlesApp.swift
 //  Candles
 //
-//  Created by Jaspreet Malak on 6/10/25.
+//  Created by Jaspreet Malak on 4/10/24.
 //
 
 import SwiftUI
@@ -11,7 +11,7 @@ import SwiftUI
 struct CandlesApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainView()
         }
     }
 }
