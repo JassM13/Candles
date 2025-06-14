@@ -1,15 +1,19 @@
-import GRDB
 import Foundation
+import GRDB
 
-class DatabaseService {
-    static let shared = DatabaseService()
+class AccountDatabaseService {
+    static let shared = AccountDatabaseService()
     private var dbQueue: DatabaseQueue
 
     private init() {
         do {
             let fileManager = FileManager.default
-            let dbPath = try fileManager
-                .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            let dbPath =
+                try fileManager
+                .url(
+                    for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil,
+                    create: true
+                )
                 .appendingPathComponent("accounts.sqlite")
                 .path
 
@@ -26,7 +30,7 @@ class DatabaseService {
             if try !db.tableExists("account") {
                 try db.create(table: "account") { t in
                     t.column("id", .text).primaryKey()
-                    t.column("broker", .text).notNull() // Assuming Broker.rawValue is String
+                    t.column("broker", .text).notNull()  // Assuming Broker.rawValue is String
                     t.column("userName", .text).notNull()
                     t.column("token", .text).notNull()
                     t.column("displayName", .text)
@@ -54,7 +58,7 @@ class DatabaseService {
             _ = try Account.deleteOne(db, key: id.uuidString)
         }
     }
-    
+
     func deleteAccount(account: Account) throws {
         try dbQueue.write { db in
             _ = try account.delete(db)

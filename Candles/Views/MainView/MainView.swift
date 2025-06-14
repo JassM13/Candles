@@ -28,32 +28,91 @@ enum TabItem: String, CaseIterable, Identifiable {
 
 struct MainView: View {
     @Environment(\.colorScheme) private var colorScheme
-    
+    @ObservedObject private var accountManager = AccountManager.shared
+    @State private var selectedAccountId: AnyHashable? = AccountManager.shared.accounts.first?.id as AnyHashable? // Default to first account if available, cast to AnyHashable
+
     @State private var selectedTab: TabItem = .watchlist
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // Content area
-            Group {
-                switch selectedTab {
-                case .watchlist:
-                    WatchlistView()
-                case .chart:
-                    ChartView()
-                case .dom:
-                    DOMView()
-                case .account:
-                    AccountView()
+        VStack(spacing: 0) {  // Use VStack to stack Picker and content
+            // Account Picker
+            if !accountManager.accounts.isEmpty {
+                HStack {
+                    Picker("Select Account", selection: $selectedAccountId) {
+                        ForEach(accountManager.accounts) { account in
+                            Text(account.displayName ?? "Unnamed Account")
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .tag(account.id as AnyHashable?) // Tag as AnyHashable
+                            
+                            // Display sub-accounts if they exist
+                            if let subAccounts = account.subAccounts, !subAccounts.isEmpty {
+                                ForEach(subAccounts) { subAccount in
+                                    Text("  ↳ " + subAccount.name)
+                                        .foregroundColor(.white) // Ensure sub-account text is also visible
+                                        .tag(subAccount.id as AnyHashable?) // Tag as AnyHashable
+                                }
+                            }
+                        }
+                    }
+                    .accentColor(.white)  // This sets the picker's text color
+                    .pickerStyle(MenuPickerStyle())
+                    .onChange(of: selectedAccountId) { newValue in
+                        // Handle account selection change if needed, e.g., update other views
+                        if let uuidValue = newValue as? UUID {
+                            print("Selected account ID (UUID): \(uuidValue.uuidString)")
+                        } else if let intValue = newValue as? Int {
+                            print("Selected account ID (Int): \(intValue)")
+                        } else {
+                            print("Selected account ID: None or unknown type")
+                        }
+                    }
+                    Spacer()
                 }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .animation(.easeInOut, value: selectedTab) // Animate content switching
-
-            // Custom Tab Bar
-            CustomTabBar(selectedTab: $selectedTab)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(colorScheme == .dark ? .black : .white)
+                        .stroke(colorScheme == .dark ? .white : .black, lineWidth: 1)
+                )
                 .padding(.horizontal)
+                .padding(.top, 8)
+                .padding(.bottom, 4)  // Small padding below picker
+            } else {
+                Text("No accounts available. Add an account in the Account tab.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding()
+            }
+
+            ZStack(alignment: .bottom) {
+                // Content area
+                Group {
+                    switch selectedTab {
+                    case .watchlist:
+                        WatchlistView()
+                    case .chart:
+                        ChartView()
+                    case .dom:
+                        DOMView()
+                    case .account:
+                        AccountView()
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .animation(.easeInOut, value: selectedTab)  // Animate content switching
+
+                // Custom Tab Bar
+                CustomTabBar(selectedTab: $selectedTab)
+                    .padding(.horizontal)
+            }
+            .ignoresSafeArea(.keyboard, edges: .bottom)  // Ensure tab bar is not pushed by keyboard
         }
-        .ignoresSafeArea(.keyboard, edges: .bottom) // Ensure tab bar is not pushed by keyboard
+        .onAppear {
+            // Ensure selectedAccountId is set if accounts load after view appears
+            if selectedAccountId == nil, let firstAccountId = accountManager.accounts.first?.id {
+                selectedAccountId = firstAccountId as AnyHashable?
+            }
+        }
     }
 }
 
@@ -91,12 +150,11 @@ struct CustomTabBar: View {
                     .foregroundColor(selectedTab == tab ? .blue : .gray)
                 }
                 .buttonStyle(PlainButtonStyle())  // To remove default button styling
-                .contentShape(Rectangle()) // Ensure the entire frame is tappable
+                .contentShape(Rectangle())  // Ensure the entire frame is tappable
             }
         }
     }
 }
-
 
 #Preview {
     MainView()

@@ -19,6 +19,18 @@ struct AccountListView: View {
                         // Text("Token: \(account.token.prefix(8))...")
                         //    .font(.caption)
                         //    .foregroundColor(.gray)
+                        if let subAccounts = account.subAccounts, !subAccounts.isEmpty {
+                            Text("Sub-Accounts: \(subAccounts.count)")
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                            Text("Total Sub-Account Balance: $\(subAccounts.reduce(0) { $0 + $1.balance }, specifier: "%.2f")")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                        } else {
+                            Text("No sub-accounts")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                        }
                     }
                 }
                 .onDelete(perform: deleteAccount)
