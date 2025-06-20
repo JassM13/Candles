@@ -29,7 +29,8 @@ enum TabItem: String, CaseIterable, Identifiable {
 struct MainView: View {
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject private var accountManager = AccountManager.shared
-    @State private var selectedAccountId: AnyHashable? = AccountManager.shared.accounts.first?.id as AnyHashable? // Default to first account if available, cast to AnyHashable
+    @State private var selectedAccountId: AnyHashable? =
+        AccountManager.shared.accounts.first?.id as AnyHashable?  // Default to first account if available, cast to AnyHashable
 
     @State private var selectedTab: TabItem = .watchlist
 
@@ -43,14 +44,14 @@ struct MainView: View {
                             Text(account.displayName ?? "Unnamed Account")
                                 .fontWeight(.bold)
                                 .foregroundColor(.white)
-                                .tag(account.id as AnyHashable?) // Tag as AnyHashable
-                            
+                                .tag(account.id as AnyHashable?)  // Tag as AnyHashable
+
                             // Display sub-accounts if they exist
                             if let subAccounts = account.subAccounts, !subAccounts.isEmpty {
                                 ForEach(subAccounts) { subAccount in
                                     Text("  ↳ " + subAccount.name)
-                                        .foregroundColor(.white) // Ensure sub-account text is also visible
-                                        .tag(subAccount.id as AnyHashable?) // Tag as AnyHashable
+                                        .foregroundColor(.white)  // Ensure sub-account text is also visible
+                                        .tag(subAccount.id as AnyHashable?)  // Tag as AnyHashable
                                 }
                             }
                         }
@@ -85,13 +86,18 @@ struct MainView: View {
             }
 
             ZStack(alignment: .bottom) {
-                // Content area
+                // Content area with padding and rounded corners
                 Group {
                     switch selectedTab {
                     case .watchlist:
                         WatchlistView()
                     case .chart:
                         ChartView()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                            .padding(2)
                     case .dom:
                         DOMView()
                     case .account:
@@ -99,6 +105,8 @@ struct MainView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.bottom, 60)  // Reduced space above tab bar
+                .padding(.horizontal, 8)
                 .animation(.easeInOut, value: selectedTab)  // Animate content switching
 
                 // Custom Tab Bar
@@ -146,13 +154,21 @@ struct CustomTabBar: View {
                     .padding(.vertical, 8)
                     .padding(.horizontal, 16)
                     .background(selectedTab == tab ? Color.blue.opacity(0.2) : Color.clear)
-                    .cornerRadius(10)
+                    .cornerRadius(12)
                     .foregroundColor(selectedTab == tab ? .blue : .gray)
                 }
                 .buttonStyle(PlainButtonStyle())  // To remove default button styling
                 .contentShape(Rectangle())  // Ensure the entire frame is tappable
             }
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 4)  // Further reduced vertical padding
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(UIColor.systemBackground))
+                .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: -5)
+        )
+        .padding(.bottom, 0)  // Minimal bottom padding to get closer to swipe area
     }
 }
 
