@@ -26,16 +26,6 @@ struct ChartControlsView: View {
                     showingSelector: $showingTimeframeSelector
                 )
                 
-                Spacer()
-                
-                // Chart Type Selector
-                ChartTypeSelector(chartType: $chartType)
-                
-                Spacer()
-                
-                // Zoom Controls
-                ZoomControlsView(chartEngine: chartEngine)
-                
                 // Settings Button
                 Button(action: {
                     showingChartSettings.toggle()

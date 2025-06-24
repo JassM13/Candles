@@ -93,13 +93,20 @@ struct MainView: View {
                         WatchlistView()
                     case .chart:
                         ChartView()
-                            .background(
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(
                                 RoundedRectangle(cornerRadius: 12)
                                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
                             .padding(2)
                     case .dom:
                         DOMView()
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                            .padding(2)
                     case .account:
                         AccountView()
                     }

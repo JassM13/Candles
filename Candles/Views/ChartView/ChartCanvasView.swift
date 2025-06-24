@@ -28,7 +28,12 @@ struct ChartCanvasView: View {
             TimeLabelsView(chartEngine: chartEngine, geometry: geometry)
             
             // Main Chart
-            ChartContentView(chartEngine: chartEngine, geometry: geometry)
+            HStack(spacing: 0) {
+                ChartContentView(chartEngine: chartEngine, geometry: geometry)
+                    .clipped()
+                Spacer()
+                    .frame(width: 60)
+            }
             
             // Indicators
             IndicatorOverlayView(indicatorManager: indicatorManager, chartEngine: chartEngine, geometry: geometry)
@@ -103,25 +108,32 @@ struct PriceLabelsView: View {
     let geometry: GeometryProxy
     
     var body: some View {
-        VStack {
-            ForEach(0..<6, id: \.self) { i in
-                let normalizedY = CGFloat(i) / 5
-                let price = chartEngine.priceRange.upperBound - (Double(normalizedY) * (chartEngine.priceRange.upperBound - chartEngine.priceRange.lowerBound))
-                
-                HStack {
-                    Spacer()
-                    Text(String(format: "%.2f", price))
-                        .font(.caption2)
-                        .foregroundColor(.gray)
-                        .background(Color(.systemBackground).opacity(0.8))
-                        .padding(.horizontal, 4)
-                        .padding(.trailing, 8)
-                }
-                
-                if i < 5 {
-                    Spacer()
+        HStack(spacing: 0) {
+            Spacer()
+            VStack {
+                ForEach(0..<6, id: \.self) { i in
+                    let normalizedY = CGFloat(i) / 5
+                    let price = chartEngine.priceRange.upperBound - (Double(normalizedY) * (chartEngine.priceRange.upperBound - chartEngine.priceRange.lowerBound))
+                    
+                    HStack {
+                        Spacer()
+                        Text(String(format: "%.2f", price))
+                            .font(.caption2)
+                            .foregroundColor(.gray)
+                            .lineLimit(1) // Keep it on one line
+                            .minimumScaleFactor(0.7) // Allow it to shrink to 70% of its original size if needed
+                            .padding(.trailing, 8)
+                    }
+                    
+                    if i < 5 {
+                        Spacer()
+                    }
                 }
             }
+            .frame(width: 50)
+            .padding(2)
+            .background(Color(.gray).opacity(0.2))
+            .border(Color.gray.opacity(0.3), width: 1)
         }
     }
 }
@@ -141,14 +153,10 @@ struct TimeLabelsView: View {
                     HStack {
                         Group {
                             if chartEngine.visibleRange.contains(dataIndex) && dataIndex < chartEngine.chartData.count {
-                                let dataPoint = chartEngine.chartData[dataIndex]
-                                let formatter = DateFormatter()
-                                //formatter.dateFormat = "HH:mm"
-                                
-                                Text(formatter.string(from: dataPoint.date))
+                                Text(timeLabel(for: dataIndex))
                                     .font(.caption2)
-                                    .foregroundColor(.gray)
-                                    .background(Color(.systemBackground).opacity(0.8))
+                                    .foregroundColor(Color.gray.opacity(0.3))
+                                    //
                                     .padding(.horizontal, 4)
                             } else {
                                 Text("")
@@ -161,8 +169,17 @@ struct TimeLabelsView: View {
                     }
                 }
             }
-            .padding(.bottom, 8)
+            .padding(2)
+            .background(Color(.gray).opacity(0.2))
+            .border(Color.gray.opacity(0.3), width: 1)
         }
+    }
+    
+    private func timeLabel(for dataIndex: Int) -> String {
+        let dataPoint = chartEngine.chartData[dataIndex]
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: dataPoint.date)
     }
 }
 

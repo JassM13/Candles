@@ -69,3 +69,8 @@ struct ChartView: View {
         chartEngine.updateData(dummyData)
     }
 }
+
+
+#Preview {
+    ChartView()
+}
