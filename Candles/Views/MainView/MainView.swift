@@ -72,7 +72,7 @@ struct MainView: View {
                 }
                 .background(
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(colorScheme == .dark ? .black : .white)
+                        .fill(colorScheme == .dark ? .white : .black)
                         .stroke(colorScheme == .dark ? .white : .black, lineWidth: 1)
                 )
                 .padding(.horizontal)

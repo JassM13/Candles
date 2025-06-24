@@ -25,21 +25,6 @@ struct ChartControlsView: View {
                     selectedTimeframe: $selectedTimeframe,
                     showingSelector: $showingTimeframeSelector
                 )
-                
-                // Settings Button
-                Button(action: {
-                    showingChartSettings.toggle()
-                }) {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.primary)
-                        .padding(8)
-                        .background(
-                            Circle()
-                                .fill(Color(.systemGray5))
-                        )
-                }
-                .buttonStyle(PlainButtonStyle())
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
