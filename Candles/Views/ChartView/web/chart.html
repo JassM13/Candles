@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Candlestick Chart</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=No">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        #chart-container {
+            position: relative;
+            width: 100%;
+            height: calc(100% - 60px);
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: manipulation;
+        }
+        
+        #chart-controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background-color: #1C1C1E;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 0 20px;
+            box-sizing: border-box;
+            border-top: 1px solid #2C2C2E;
+        }
+        
+        .timeframe-btn {
+            background-color: #2C2C2E;
+            color: #FFFFFF;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .timeframe-btn:hover {
+            background-color: #3A3A3C;
+        }
+        
+        .timeframe-btn.active {
+            background-color: #007AFF;
+            color: #FFFFFF;
+        }
+        
+
+        
+        .price-crosshair {
+            position: absolute;
+            pointer-events: none;
+            border-left: 1px dashed #666;
+            border-top: 1px dashed #666;
+            z-index: 5;
+        }
+        
+        #chart-container:hover {
+            cursor: crosshair;
+        }
+    </style>
+</head>
+<body>
+    <div id="chart-container">
+        <canvas id="chart"></canvas>
+
+    </div>
+    
+    <div id="chart-controls">
+        <button class="timeframe-btn" data-timeframe="5m">5m</button>
+        <button class="timeframe-btn active" data-timeframe="15m">15m</button>
+        <button class="timeframe-btn" data-timeframe="1h">1h</button>
+        <button class="timeframe-btn" data-timeframe="4h">4h</button>
+        <button class="timeframe-btn" data-timeframe="1d">1d</button>
+        <button class="timeframe-btn" data-timeframe="1w">1w</button>
+    </div>
+    <!-- External JavaScript files -->
+    <script src="utils.js"></script>
+    <script src="chart.js"></script>
+    <script src="controls.js"></script>
+    
+    <script>
+         // Global variables
+         let chart;
+         let chartControls;
+         
+        window.onerror = function(message, source, lineno, colno, error) {
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.error) {
+                window.webkit.messageHandlers.error.postMessage(`Error: ${message} at ${source}:${lineno}`);
+            }
+            return true;
+        };
+        
+        // Enhanced logging function
+        function logMessage(message) {
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.log) {
+                window.webkit.messageHandlers.log.postMessage(message);
+            } else {
+                console.log(message);
+            }
+        }
+        
+        // Chart ready notification
+        function notifyChartReady() {
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.chartReady) {
+                window.webkit.messageHandlers.chartReady.postMessage('ready');
+            }
+            logMessage('📊 Chart is ready, requesting data...');
+            
+            // Also request data immediately
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.dataRequest) {
+                window.webkit.messageHandlers.dataRequest.postMessage('requestData');
+            }
+        }
+        
+        // Chart ready notification and data request
+        function notifyChartReadyAndRequestData() {
+            notifyChartReady();
+            requestChartData();
+        }
+        
+        logMessage('Chart HTML loaded');
+        
+        // Chart data will be provided by Swift
+        let chartData = [];
+        
+        // Function to update chart data from Swift
+        function updateChartData(newData) {
+            try {
+                logMessage('📊 Data: Received data from Swift');
+                logMessage(`📊 Data: Data length: ${newData.length}`);
+                
+                if (validateChartData(newData)) {
+                    if (chart) {
+                        chart.setData(newData);
+                        logMessage(`📊 Data: Chart updated with ${newData.length} candles`);
+                    } else {
+                        logMessage('📊 Data: Chart not ready yet');
+                    }
+                }
+            } catch (error) {
+                logError(error, 'updateChartData');
+            }
+        }
+         
+         // Initialize chart function
+         function initializeChart() {
+             try {
+                 logMessage('📊 Chart: Initializing chart...');
+                 
+                 const canvas = document.getElementById('chart');
+                 if (!canvas) {
+                     throw new Error('Canvas element not found');
+                 }
+                 
+                 chart = new CandlestickChart(canvas);
+                 chartControls = new ChartControls();
+                 
+
+                 
+                 // Notify Swift that chart is ready and request data
+                 notifyChartReadyAndRequestData();
+                 
+                 logMessage('📊 Chart: Chart initialized, waiting for data from Swift');
+             } catch (error) {
+                 logError(error, 'Chart initialization');
+             }
+         }
+         
+         // Start initialization when DOM is ready
+         if (document.readyState === 'loading') {
+             document.addEventListener('DOMContentLoaded', function() {
+                 initializeChart();
+             });
+         } else {
+             initializeChart();
+         }
+         
+    </script>
+</body>
+</html>

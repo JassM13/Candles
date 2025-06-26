@@ -1,76 +1,66 @@
-//
-//  ChartView.swift
-//  Candles
-//
-//  Created by Jaspreet Malak on 6/12/25.
-//
-
 import SwiftUI
-import Combine
 
 struct ChartView: View {
-    @StateObject private var chartEngine = ChartEngine()
-    @StateObject private var indicatorManager = IndicatorManager()
-    @State private var selectedTimeframe: Timeframe = .fifteenMin
-    @State private var selectedSymbol: String = "AAPL"
-    @State private var chartType: ChartType = .candlestick
-    @State private var showScriptingView = false
-    @State private var showIndicatorPanel = false
+    @State private var chartData: [CandleData] = []
 
-      var body: some View {
-        VStack(spacing: 0) {
-
-            
-            // Main Chart Area
-            GeometryReader { geometry in
-                ZStack {
-                    // Background
-                    Color.black.opacity(0.05)
-                    
-                    // Chart Canvas
-                    ChartCanvasView(
-                        chartEngine: chartEngine,
-                        indicatorManager: indicatorManager,
-                        geometry: geometry
-                    )
-                }
+    var body: some View {
+        WebView(htmlFileName: "chart", chartData: chartData)
+            .ignoresSafeArea()
+            .onAppear {
+                generateDummyData()
             }
-            
-            // Chart Controls
-            ChartControlsView(
-                selectedTimeframe: $selectedTimeframe,
-                chartType: $chartType,
-                chartEngine: chartEngine
-            )
-        }
-        .onAppear {
-            loadChartData()
-        }
-        .onChange(of: selectedSymbol) { _ in
-            loadChartData()
-        }
-        .onChange(of: selectedTimeframe) { _ in
-            loadChartData()
-        }
-        .sheet(isPresented: $showScriptingView) {
-            TickScriptDSLView(
-                isVisible: $showScriptingView,
-                indicatorManager: indicatorManager
-            )
-        }
-        .sheet(isPresented: $showIndicatorPanel) {
-            IndicatorPanelView(indicatorManager: indicatorManager)
-        }
     }
-    
-    private func loadChartData() {
-        // Load chart data based on symbol and timeframe
-        let dummyData = getDummyData(for: selectedTimeframe)
-        chartEngine.updateData(dummyData)
+
+    private func generateDummyData() {
+        let calendar = Calendar.current
+        let now = Date()
+        var data: [CandleData] = []
+        var currentPrice = 100.0
+
+        for i in 0..<50 {
+            let date = calendar.date(byAdding: .day, value: -i, to: now) ?? now
+
+            // Generate realistic price movement
+            let change = Double.random(in: -2.0...2.0)
+            currentPrice += change
+
+            let open = currentPrice
+            let volatility = Double.random(in: 0.5...3.0)
+            let high = open + Double.random(in: 0...volatility)
+            let low = open - Double.random(in: 0...volatility)
+            let close = Double.random(in: low...high)
+
+            currentPrice = close
+
+            let candle = CandleData(
+                time: date.timeIntervalSince1970 * 1000,  // Convert to milliseconds
+                open: open,
+                high: high,
+                low: low,
+                close: close
+            )
+
+            data.insert(candle, at: 0)  // Insert at beginning to maintain chronological order
+        }
+
+        self.chartData = data
+        print("📊 Swift: Generated \(data.count) candles")
+        print(
+            "📊 Swift: First candle - Open: \(data.first?.open ?? 0), Close: \(data.first?.close ?? 0)"
+        )
     }
 }
 
+struct CandleData: Codable {
+    let time: Double
+    let open: Double
+    let high: Double
+    let low: Double
+    let close: Double
+}
 
-#Preview {
-    ChartView()
+struct ChartView_Previews: PreviewProvider {
+    static var previews: some View {
+        ChartView()
+    }
 }
